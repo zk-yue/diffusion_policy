@@ -122,13 +122,13 @@ class RTDEInterpolationController(mp.Process):
         rtde_r = RTDEReceiveInterface(hostname=robot_ip)
         example = dict()
         for key in receive_keys:
-            example[key] = np.array(getattr(rtde_r, 'get'+key)())
+            example[key] = np.array(getattr(rtde_r, 'get'+key)()) # 从rtde_r中获取属性值
         example['robot_receive_timestamp'] = time.time()
-        ring_buffer = SharedMemoryRingBuffer.create_from_examples(
+        ring_buffer = SharedMemoryRingBuffer.create_from_examples( # 环形缓冲区
             shm_manager=shm_manager,
             examples=example,
-            get_max_k=get_max_k,
-            get_time_budget=0.2,
+            get_max_k=get_max_k, # 最大k
+            get_time_budget=0.2, # 获取时间的预算
             put_desired_frequency=frequency
         )
 
@@ -247,18 +247,21 @@ class RTDEInterpolationController(mp.Process):
             curr_t = time.monotonic()
             last_waypoint_time = curr_t
             pose_interp = PoseTrajectoryInterpolator(
-                times=[curr_t],
-                poses=[curr_pose]
+                times=[curr_t], # 长度为1（需要确定）
+                poses=[curr_pose] # 长度为1
             )
             
             iter_idx = 0
             keep_running = True
             while keep_running:
                 # start control iteration
-                t_start = rtde_c.initPeriod()
+                # t_start = rtde_c.initPeriod()
 
                 # send command to robot
                 t_now = time.monotonic()
+
+                t_start = t_now # 新增修改
+
                 # diff = t_now - pose_interp.times[-1]
                 # if diff > 0:
                 #     print('extrapolate', diff)
@@ -270,7 +273,7 @@ class RTDEInterpolationController(mp.Process):
                     dt, 
                     self.lookahead_time, 
                     self.gain)
-                
+
                 # update robot state
                 state = dict()
                 for key in self.receive_keys:
@@ -296,11 +299,14 @@ class RTDEInterpolationController(mp.Process):
                         keep_running = False
                         # stop immediately, ignore later commands
                         break
+
+                    # 没有用到
                     elif cmd == Command.SERVOL.value:
                         # since curr_pose always lag behind curr_target_pose
                         # if we start the next interpolation with curr_pose
                         # the command robot receive will have discontinouity 
                         # and cause jittery robot behavior.
+                        # 使用curr_target_pose作为插值的起点，而不是curr_pose，轨迹更加连续
                         target_pose = command['target_pose']
                         duration = float(command['duration'])
                         curr_time = t_now + dt
@@ -336,15 +342,21 @@ class RTDEInterpolationController(mp.Process):
                         break
 
                 # regulate frequency
-                rtde_c.waitPeriod(t_start)
+                # rtde_c.waitPeriod(t_start)
+                t_end = time.monotonic()            
+                t_cost = t_end - t_start
+                if (1/self.frequency - t_cost > 0):
+                    time.sleep(1/self.frequency - t_cost)
 
                 # first loop successful, ready to receive command
                 if iter_idx == 0:
                     self.ready_event.set()
                 iter_idx += 1
 
+                # if self.verbose:
+                #     print(f"[RTDEPositionalController] Actual frequency {1/(time.perf_counter() - t_start)}")
                 if self.verbose:
-                    print(f"[RTDEPositionalController] Actual frequency {1/(time.perf_counter() - t_start)}")
+                    print(f"[RTDEPositionalController] Actual frequency {1/(time.monotonic() - t_start)}")
 
         finally:
             # manditory cleanup

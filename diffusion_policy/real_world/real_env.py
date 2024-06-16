@@ -151,7 +151,9 @@ class RealEnv:
             )
 
         cube_diag = np.linalg.norm([1,1,1])
-        j_init = np.array([0,-90,-90,-90,90,0]) / 180 * np.pi
+        # j_init = np.array([0,-90,-90,-90,90,0]) / 180 * np.pi
+        # j_init = np.array([192,-56,143,-164,46,-158]) / 180 * np.pi
+        j_init = np.array([221,-68,133,-120,57,-147]) / 180 * np.pi
         if not init_joints:
             j_init = None
 
@@ -345,7 +347,7 @@ class RealEnv:
                 new_stages,
                 new_timestamps
             )
-    
+            
     def get_robot_state(self):
         return self.robot.get_state()
 

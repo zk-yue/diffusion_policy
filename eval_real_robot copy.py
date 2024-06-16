@@ -64,12 +64,10 @@ def batch_transform_points(points, matrix):
     # 去掉齐次坐标的那一列
     return transformed_points_homogeneous[:, :3]
 
-
 OmegaConf.register_new_resolver("eval", eval, replace=True)
 
 @click.command()
 @click.option('--input', '-i', default="data/outputs/blah/checkpoints/latest.ckpt", required=True, help='Path to checkpoint')
-@click.option('--output', '-o', required=True, help='Directory to save recording')
 @click.option('--robot_ip', '-ri', default='192.168.1.8', required=True, help="UR5's IP address e.g. 192.168.0.204")
 @click.option('--match_dataset', '-m', default=None, help='Dataset used to overlay and adjust initial condition')
 @click.option('--match_episode', '-me', default=None, type=int, help='Match specific episode from the match dataset')
@@ -383,6 +381,7 @@ def main(input, output, robot_ip, match_dataset, match_episode,
                         this_target_poses[:,:3] = batch_transform_points(this_target_poses[:, :3], transformation_matrix)
                         this_target_poses[:,:3] = np.clip(this_target_poses[:,:3], [0.18, -0.51, -0.14], [0.72, -0.26, 0.53])
                         this_target_poses[:,:3] = batch_transform_points(this_target_poses[:,:3], inverse_transformation_matrix)
+
 
                         # execute actions
                         env.exec_actions(

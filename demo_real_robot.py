@@ -29,15 +29,57 @@ from diffusion_policy.real_world.keystroke_counter import (
     KeystrokeCounter, Key, KeyCode
 )
 
+# new 
+def transform_point(point, transformation_matrix):
+    """
+    Apply a transformation matrix to a 3D point.
+    
+    Parameters:
+    point (tuple): A point in 3D space (x, y, z).
+    transformation_matrix (np.ndarray): A 4x4 transformation matrix.
+    
+    Returns:
+    np.ndarray: Transformed point as a 1x3 array.
+    """
+    x, y, z = point
+    point_homogeneous = np.array([x, y, z, 1])
+    transformed_point_homogeneous = transformation_matrix @ point_homogeneous
+    return transformed_point_homogeneous[:3]
+
+#    default='data/demo_pusht_real', 
 @click.command()
-@click.option('--output', '-o', required=True, help="Directory to save demonstration dataset.")
-@click.option('--robot_ip', '-ri', required=True, help="UR5's IP address e.g. 192.168.0.204")
+@click.option('--output', '-o', default='data/demo_pusht_real', required=True, help="Directory to save demonstration dataset.")
+@click.option('--robot_ip', '-ri', default='192.168.56.2', required=True, help="UR5's IP address e.g. 192.168.0.204")
 @click.option('--vis_camera_idx', default=0, type=int, help="Which RealSense camera to visualize.")
-@click.option('--init_joints', '-j', is_flag=True, default=False, help="Whether to initialize robot joint configuration in the beginning.")
+@click.option('--init_joints', '-j', is_flag=True, default=True, help="Whether to initialize robot joint configuration in the beginning.")
 @click.option('--frequency', '-f', default=10, type=float, help="Control frequency in Hz.")
 @click.option('--command_latency', '-cl', default=0.01, type=float, help="Latency between receiving SapceMouse command to executing on Robot in Sec.")
 def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_latency):
     dt = 1/frequency
+    # 新加
+    # transformation_matrix=np.array(
+    #     [[1.,    0.,             0.,             0],
+    #     [0.,    -0.70710678,    0.70710678,    0],
+    #     [0.,    -0.70710678,     -0.70710678,    0],
+    #     [0.,    0.,             0.,             1]])
+
+    # inverse_transformation_matrix=np.array(
+    #     [[1.,    0.           ,0.,           0],
+    #     [0.,    -0.70710678  ,-0.70710678,   0],
+    #     [0.,    -0.70710678  ,-0.70710678,  0],
+    #     [0.,    0.          ,0.,            1]])
+    
+    # transformation_matrix=np.array(
+    #     [[1.,    0.,             0.],
+    #     [0.,    -0.70710678,    -0.70710678],
+    #     [0.,    0.70710678,     -0.70710678]])
+
+    transformation_matrix=np.array(
+        [[1.,    0.           ,0.,           0],
+        [0.,    -0.70710678  ,-0.70710678,   0],
+        [0.,    0.70710678  ,-0.70710678,  0],
+        [0.,    0.          ,0.,            1]])
+
     with SharedMemoryManager() as shm_manager:
         with KeystrokeCounter() as key_counter, \
             Spacemouse(shm_manager=shm_manager) as sm, \
@@ -48,7 +90,7 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                 obs_image_resolution=(1280,720),
                 frequency=frequency,
                 init_joints=init_joints,
-                enable_multi_cam_vis=True,
+                enable_multi_cam_vis=False,
                 record_raw_video=True,
                 # number of threads per camera view for video recording (H.264)
                 thread_per_video=3,
@@ -131,21 +173,35 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                 sm_state = sm.get_motion_state_transformed()
                 # print(sm_state)
                 dpos = sm_state[:3] * (env.max_pos_speed / frequency)
-                drot_xyz = sm_state[3:] * (env.max_rot_speed / frequency)
-                
-                if not sm.is_button_pressed(0):
+                drot_xyz = sm_state[3:] * (env.max_rot_speed / frequency) # [0.0, 0.0, 0.0]
+                # print("sm.is_button_pressed(0):",sm.is_button_pressed(0))
+                # print("sm.is_button_pressed(1):",sm.is_button_pressed(1))
+                if not sm.is_button_pressed(0): # 面对标志 左边按钮 不按下是false
                     # translation mode
-                    drot_xyz[:] = 0
+                    drot_xyz[:] = 0 # 不按左边按钮 姿态不变
                 else:
-                    dpos[:] = 0
+                    dpos[:] = 0 # 按下位置不变
                 if not sm.is_button_pressed(1):
                     # 2D translation mode
-                    dpos[2] = 0    
+                    dpos[2] = 0 # 平面运动
 
+                dpos=transform_point(dpos, transformation_matrix)
+                drot_xyz=transform_point(drot_xyz, transformation_matrix)
+                # print("dpos:",dpos/ (env.max_pos_speed / frequency))
                 drot = st.Rotation.from_euler('xyz', drot_xyz)
-                target_pose[:3] += dpos
+                # print(dpos)
+                # print("target_pose_1",target_pose)
+
+                # target_pose_temp = transform_point(target_pose[:3], transformation_matrix)
+                # target_pose_temp += dpos
+                # target_pose_temp = transform_point(target_pose_temp, inverse_transformation_matrix)
+                # target_pose[:3] = target_pose_temp
+                # print("target_pose_2",target_pose)
+                # 原始代码
+                target_pose[:3] += dpos # [0.0, 0.0, 0.0]
                 target_pose[3:] = (drot * st.Rotation.from_rotvec(
                     target_pose[3:])).as_rotvec()
+                # print(target_pose)
 
                 # execute teleop command
                 env.exec_actions(

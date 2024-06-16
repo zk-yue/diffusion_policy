@@ -256,7 +256,7 @@ Edit [`diffusion_policy/config/task/real_pusht_image.yaml`](./diffusion_policy/c
 
 Assuming the training has finished and you have a checkpoint at `data/outputs/blah/checkpoints/latest.ckpt`, launch the evaluation script with:
 ```console
-python eval_real_robot.py -i data/outputs/blah/checkpoints/latest.ckpt -o data/eval_pusht_real --robot_ip 192.168.0.204
+python eval_real_robot.py -i data/outputs/blah/checkpoints/latest.ckpt -o data/eval_pusht_real --robot_ip 192.168.56.2
 ```
 Press "C" to start evaluation (handing control over to the policy). Press "S" to stop the current episode.
 
