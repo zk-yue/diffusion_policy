@@ -17,6 +17,7 @@ from diffusion_policy.real_world.multi_camera_visualizer import MultiCameraVisua
 from diffusion_policy.common.replay_buffer import ReplayBuffer
 from diffusion_policy.common.cv2_util import (
     get_image_transform, optimal_row_cols)
+# from diffusion_policy.real_world.inspire_gripper import inspire_gripper
 
 DEFAULT_OBS_KEY_MAP = {
     # robot
@@ -61,6 +62,7 @@ class RealEnv:
             multi_cam_vis_resolution=(1280,720),
             # shared memory
             shm_manager=None
+            # use_gripper = False
             ):
         assert frequency <= video_capture_fps
         output_dir = pathlib.Path(output_dir)
@@ -140,7 +142,7 @@ class RealEnv:
             video_recorder=video_recorder,
             verbose=False
             )
-        
+
         multi_cam_vis = None
         if enable_multi_cam_vis:
             multi_cam_vis = MultiCameraVisualizer(
@@ -153,7 +155,8 @@ class RealEnv:
         cube_diag = np.linalg.norm([1,1,1])
         # j_init = np.array([0,-90,-90,-90,90,0]) / 180 * np.pi
         # j_init = np.array([192,-56,143,-164,46,-158]) / 180 * np.pi
-        j_init = np.array([221,-68,133,-120,57,-147]) / 180 * np.pi
+        # j_init = np.array([221,-68,133,-120,57,-147]) / 180 * np.pi # realpush t
+        j_init = np.array([211, -100, 136, -151, -55, -138]) / 180 * np.pi 
         if not init_joints:
             j_init = None
 
@@ -176,6 +179,16 @@ class RealEnv:
             receive_keys=None,
             get_max_k=max_obs_buffer_size
             )
+        
+        # self.use_gripper=use_gripper
+        # # 新增夹爪控制
+        # if self.use_gripper == True:
+        #     self.gripper = inspire_gripper(com_port='/dev/ttyUSB0',baudrate=115200)
+        #     self.gripper.start()
+        #     self.gripper.moveMax(speed=500)
+        #     # self.gripper.moveMinHold(500,500)
+
+
         self.realsense = realsense
         self.robot = robot
         self.multi_cam_vis = multi_cam_vis
@@ -332,10 +345,19 @@ class RealEnv:
         # schedule waypoints
         for i in range(len(new_actions)):
             self.robot.schedule_waypoint(
-                pose=new_actions[i],
+                # pose=new_actions[i] # 原始
+                pose=new_actions[i][:6],
                 target_time=new_timestamps[i]
             )
-        
+
+        # if (self.use_gripper == True and len(new_actions)!=0) and len(new_actions[0])==7:
+        #     if new_actions[-1][6]==1:
+        #         self.gripper.moveMax(500)
+        #     else:
+        #         self.gripper.moveMinHold(500,500)
+        # else:
+        #     pass
+
         # record actions
         if self.action_accumulator is not None:
             self.action_accumulator.put(

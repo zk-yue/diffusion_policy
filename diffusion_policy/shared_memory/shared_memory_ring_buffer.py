@@ -35,7 +35,7 @@ class SharedMemoryRingBuffer:
         """
 
         # create atomic counter
-        counter = SharedAtomicCounter(shm_manager)
+        counter = SharedAtomicCounter(shm_manager) # 共享内存中的原子计数器
 
         # compute buffer size
         # At any given moment, the past get_max_k items should never 
@@ -44,21 +44,24 @@ class SharedMemoryRingBuffer:
         # we need enough empty slots to make sure put_desired_frequency Hz
         # of put can be sustaied.
         buffer_size = int(np.ceil(
-            put_desired_frequency * get_time_budget 
-            * safety_margin)) + get_max_k
+            put_desired_frequency * get_time_budget  # put_desired_frequency期望的放置频率 * get_time_budget（获取时间预算）的乘积
+            * safety_margin)) + get_max_k # safety_margin（安全边际） + get_max_k（最大k值）
+            # 表示在给定的时间预算内，按照期望的放置频率，需要的最小缓冲区大小。
 
         # allocate shared memory
+        # 这段代码的主要目的是为一组数组规格（array_specs）分配共享内存。每个规格（spec）都有一个名称（name），形状（shape）和数据类型（dtype）
         shared_arrays = dict()
         for spec in array_specs:
             key = spec.name
-            assert key not in shared_arrays
-            array = SharedNDArray.create_from_shape(
+            assert key not in shared_arrays # 这是为了防止重复的键覆盖已经存在的数组。
+            array = SharedNDArray.create_from_shape( # 创建一个新的共享内存数组
                 mem_mgr=shm_manager,
                 shape=(buffer_size,) + tuple(spec.shape),
                 dtype=spec.dtype)
             shared_arrays[key] = array
         
         # allocate timestamp array
+        # 这段代码的主要目的是创建一个共享内存数组，用于存储时间戳
         timestamp_array = SharedNDArray.create_from_shape(
             mem_mgr=shm_manager, 
             shape=(buffer_size,),
@@ -91,12 +94,12 @@ class SharedMemoryRingBuffer:
         for key, value in examples.items():
             shape = None
             dtype = None
-            if isinstance(value, np.ndarray):
+            if isinstance(value, np.ndarray): # value是一个数组
                 shape = value.shape
                 dtype = value.dtype
                 assert dtype != np.dtype('O')
-            elif isinstance(value, numbers.Number):
-                shape = tuple()
+            elif isinstance(value, numbers.Number): # value是一个数字
+                shape = tuple() # 空元组
                 dtype = np.dtype(type(value))
             else:
                 raise TypeError(f'Unsupported type {type(value)}')
@@ -108,7 +111,7 @@ class SharedMemoryRingBuffer:
             )
             specs.append(spec)
 
-        obj = cls(
+        obj = cls( # 它代表当前的类
             shm_manager=shm_manager,
             array_specs=specs,
             get_max_k=get_max_k,

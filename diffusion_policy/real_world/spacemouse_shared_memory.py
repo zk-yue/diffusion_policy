@@ -117,7 +117,7 @@ class Spacemouse(mp.Process):
         if wait:
             self.join()
     
-    def __enter__(self):
+    def __enter__(self): # 当使用with语句创建一个对象的上下文时，__enter__方法会被自动调用。
         self.start()
         return self
     
