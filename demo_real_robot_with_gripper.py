@@ -49,7 +49,7 @@ def transform_point(point, transformation_matrix):
 
 #    default='data/demo_pusht_real', 
 @click.command()
-@click.option('--output', '-o', default='data/demo_test', required=True, help="Directory to save demonstration dataset.")
+@click.option('--output', '-o', default='data/vube_in_cup', required=True, help="Directory to save demonstration dataset.")
 @click.option('--robot_ip', '-ri', default='192.168.56.2', required=True, help="UR5's IP address e.g. 192.168.0.204")
 @click.option('--vis_camera_idx', default=0, type=int, help="Which RealSense camera to visualize.")
 @click.option('--init_joints', '-j', is_flag=True, default=True, help="Whether to initialize robot joint configuration in the beginning.")
@@ -195,16 +195,17 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                 drot_xyz = sm_state[3:] * (env.max_rot_speed / frequency) # [0.0, 0.0, 0.0]
                 # print("sm.is_button_pressed(0):",sm.is_button_pressed(0))
                 # print("sm.is_button_pressed(1):",sm.is_button_pressed(1))
-                '''
-                if not sm.is_button_pressed(0): # 面对标志 左边按钮 不按下是false
-                    # translation mode
-                    drot_xyz[:] = 0 # 不按左边按钮 姿态不变
-                else:
-                    dpos[:] = 0 # 按下位置不变
-                if not sm.is_button_pressed(1):
-                    # 2D translation mode
-                    dpos[2] = 0 # 平面运动
-                '''
+                
+                # if not sm.is_button_pressed(0): # 面对标志 左边按钮 不按下是false
+                #     # translation mode
+                #     drot_xyz[:] = 0 # 不按左边按钮 姿态不变
+                # else:
+                #     dpos[:] = 0 # 按下位置不变
+                # if not sm.is_button_pressed(1):
+                #     # 2D translation mode
+                #     dpos[2] = 0 # 平面运动
+                drot_xyz[1:3] = 0
+                
 
 
                 dpos=transform_point(dpos, transformation_matrix)

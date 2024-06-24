@@ -261,7 +261,7 @@ class RealEnv:
 
         # get data
         # 30 Hz, camera_receive_timestamp
-        k = math.ceil(self.n_obs_steps * (self.video_capture_fps / self.frequency))
+        k = math.ceil(self.n_obs_steps * (self.video_capture_fps / self.frequency)) # n_obs_steps=2 video_capture_fps=30 frequency=10
         self.last_realsense_data = self.realsense.get(
             k=k, 
             out=self.last_realsense_data)
@@ -272,18 +272,20 @@ class RealEnv:
 
         # align camera obs timestamps
         dt = 1 / self.frequency
-        last_timestamp = np.max([x['timestamp'][-1] for x in self.last_realsense_data.values()])
-        obs_align_timestamps = last_timestamp - (np.arange(self.n_obs_steps)[::-1] * dt)
+        last_timestamp = np.max([x['timestamp'][-1] for x in self.last_realsense_data.values()]) # 获取最新时间戳
+        obs_align_timestamps = last_timestamp - (np.arange(self.n_obs_steps)[::-1] * dt) 
+        # np.arange(self.n_obs_steps)生成了一个从0到self.n_obs_steps-1的整数序列。这个序列的长度就是self.n_obs_steps，代表了观察步骤的数量。
+        # 然后，[::-1]将这个序列反转，使其从self.n_obs_steps-1到0。这样做的目的是为了从最新的时间戳开始生成时间戳序列。
 
         camera_obs = dict()
-        for camera_idx, value in self.last_realsense_data.items():
+        for camera_idx, value in self.last_realsense_data.items(): # camera_idx是字典的键 value是对应的值 时间戳（'timestamp'）和颜色数据（'color'）。
             this_timestamps = value['timestamp']
             this_idxs = list()
             for t in obs_align_timestamps:
-                is_before_idxs = np.nonzero(this_timestamps < t)[0]
+                is_before_idxs = np.nonzero(this_timestamps < t)[0] # 使用np.nonzero(this_timestamps < t)[0]找出所有小于t的时间戳在this_timestamps中的索引，存储在is_before_idxs中。
                 this_idx = 0
                 if len(is_before_idxs) > 0:
-                    this_idx = is_before_idxs[-1]
+                    this_idx = is_before_idxs[-1] 
                 this_idxs.append(this_idx)
             # remap key
             camera_obs[f'camera_{camera_idx}'] = value['color'][this_idxs]
