@@ -49,7 +49,7 @@ def transform_point(point, transformation_matrix):
 
 #    default='data/demo_pusht_real', 
 @click.command()
-@click.option('--output', '-o', default='data/vube_in_cup', required=True, help="Directory to save demonstration dataset.")
+@click.option('--output', '-o', default='data/pour_water', required=True, help="Directory to save demonstration dataset.")
 @click.option('--robot_ip', '-ri', default='192.168.56.2', required=True, help="UR5's IP address e.g. 192.168.0.204")
 @click.option('--vis_camera_idx', default=0, type=int, help="Which RealSense camera to visualize.")
 @click.option('--init_joints', '-j', is_flag=True, default=True, help="Whether to initialize robot joint configuration in the beginning.")
@@ -204,8 +204,31 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                 # if not sm.is_button_pressed(1):
                 #     # 2D translation mode
                 #     dpos[2] = 0 # 平面运动
-                drot_xyz[1:3] = 0
+
+                # pour water
+                drot_xyz[2] = 0
+                drot_xyz[0] = 0
+                if not sm.is_button_pressed(0): # 面对标志 左边按钮 不按下是false
+                    # translation mode
+                    drot_xyz[:]=0  # 不按左边按钮 姿态不变
+                else:
+                    dpos[:]=0
+
+                # drot_xyz[0]=0
                 
+
+                # if not sm.is_button_pressed(0): # 面对标志 左边按钮 不按下是false
+                #     # translation mode
+                #     # drot_xyz[:]=0  # 不按左边按钮 姿态不变
+                #     drot_xyz[1]=0
+                # else:
+                #     pass
+
+                # if sm.is_button_pressed(1): # 面对标志 左边按钮 不按下是false
+                #     # translation mode
+                #     dpos[:]=0  # 不按左边按钮 姿态不变
+                # else:
+                #     pass
 
 
                 dpos=transform_point(dpos, transformation_matrix)
@@ -239,7 +262,7 @@ def main(output, robot_ip, vis_camera_idx, init_joints, frequency, command_laten
                     elif key_stroke == KeyCode(char='p'):
                         gripper_open = 0
                         print("关闭夹爪")
-                        gripper.moveMinHold_cmd(500, 500) # 发送夹爪关闭指令
+                        gripper.moveMinHold_cmd(500, 100) # 发送夹爪关闭指令
                 target_pose[6]=gripper_open
 
                 # execute teleop command

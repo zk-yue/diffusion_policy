@@ -156,7 +156,8 @@ class RealEnv:
         # j_init = np.array([0,-90,-90,-90,90,0]) / 180 * np.pi
         # j_init = np.array([192,-56,143,-164,46,-158]) / 180 * np.pi
         # j_init = np.array([221,-68,133,-120,57,-147]) / 180 * np.pi # realpush t
-        j_init = np.array([211, -100, 136, -151, -55, -138]) / 180 * np.pi 
+        j_init = np.array([211, -100, 136, -151, -55, -47]) / 180 * np.pi # pour
+        # j_init = np.array([191, -40, 124, 18, -43, -24]) / 180 * np.pi 
         if not init_joints:
             j_init = None
 

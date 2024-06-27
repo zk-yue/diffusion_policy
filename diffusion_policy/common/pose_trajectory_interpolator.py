@@ -42,13 +42,13 @@ class PoseTrajectoryInterpolator:
             self.pos_interp = si.interp1d(times, pos, 
                 axis=0, assume_sorted=True)
             self.rot_interp = st.Slerp(times, rot)
-    
+
     @property
     def times(self) -> np.ndarray:
         if self.single_step:
             return self._times
         else:
-            return self.pos_interp.x
+            return self.pos_interp.x # interp1d 对象的 x 属性包含了用于插值的输入样本点，也就是在这个情况下的时间点。
     
     @property
     def poses(self) -> np.ndarray:
@@ -61,13 +61,14 @@ class PoseTrajectoryInterpolator:
             poses[:,3:] = self.rot_interp(self.times).as_rotvec()
             return poses
 
+    # 轨迹修剪，时间轨迹插值器的时间范围被修剪到[start_t, end_t]之间 返回更新后的插值器
     def trim(self, 
             start_t: float, end_t: float
             ) -> "PoseTrajectoryInterpolator":
         assert start_t <= end_t
         times = self.times
-        should_keep = (start_t < times) & (times < end_t)
-        keep_times = times[should_keep]
+        should_keep = (start_t < times) & (times < end_t) # array([ True,  True,  True])
+        keep_times = times[should_keep] # 保留的时间点
         all_times = np.concatenate([[start_t], keep_times, [end_t]])
         # remove duplicates, Slerp requires strictly increasing x
         all_times = np.unique(all_times)
@@ -94,9 +95,9 @@ class PoseTrajectoryInterpolator:
         last_waypoint_time = curr_time + duration
 
         # insert new pose
-        trimmed_interp = self.trim(curr_time, curr_time)
-        times = np.append(trimmed_interp.times, [last_waypoint_time], axis=0)
-        poses = np.append(trimmed_interp.poses, [pose], axis=0)
+        trimmed_interp = self.trim(curr_time, curr_time)  # 保留当前时间点
+        times = np.append(trimmed_interp.times, [last_waypoint_time], axis=0) # (2,)
+        poses = np.append(trimmed_interp.poses, [pose], axis=0) # (2,)
 
         # create new interpolator
         final_interp = PoseTrajectoryInterpolator(times, poses)
@@ -191,13 +192,13 @@ class PoseTrajectoryInterpolator:
             is_single = True
             t = np.array([t])
         
-        pose = np.zeros((len(t), 6))
+        pose = np.zeros((len(t), 6)) # 新建空的位姿数组
         if self.single_step:
             pose[:] = self._poses[0]
         else:
             start_time = self.times[0]
             end_time = self.times[-1]
-            t = np.clip(t, start_time, end_time)
+            t = np.clip(t, start_time, end_time) # clip to valid range [-1, 0, 1, 2, 3, 4]->[0, 0, 1, 3, 3]
 
             pose = np.zeros((len(t), 6))
             pose[:,:3] = self.pos_interp(t)
