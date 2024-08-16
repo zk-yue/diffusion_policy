@@ -198,6 +198,15 @@
 # print("Original point:", point)
 
 
-import time
-print("time.monotonic()", time.monotonic())
-print(" time.time()", time.time())
+# import time
+# print("time.monotonic()", time.monotonic())
+# print(" time.time()", time.time())
+
+import zarr
+import os
+
+# 加载.zarr存储的数据
+mode='r'
+# zarr_group = zarr.load('/home/yuezk/yzk/diffusion_policy/data/demo_pusht_real/replay_buffer.zarr')
+group = zarr.open(os.path.expanduser('/home/yuezk/yzk/diffusion_policy/data/demo_pusht_real/replay_buffer.zarr'), mode)
+pass    

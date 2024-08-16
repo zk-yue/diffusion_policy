@@ -92,7 +92,7 @@ class PushTImageDataset(BaseImageDataset):
 
 def test():
     import os
-    zarr_path = os.path.expanduser('~/dev/diffusion_policy/data/pusht/pusht_cchi_v7_replay.zarr')
+    zarr_path = os.path.expanduser('/home/yuezk/yzk/diffusion_policy/data/demo_pusht_real/replay_buffer.zarr')
     dataset = PushTImageDataset(zarr_path, horizon=16)
 
     # from matplotlib import pyplot as plt
